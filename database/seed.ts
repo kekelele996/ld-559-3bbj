@@ -35,7 +35,7 @@ async function main() {
       medicalHistory: '幼年期肠胃敏感，需定期复查。',
     },
   });
-  await prisma.medicalRecord.create({
+  const visit = await prisma.medicalRecord.create({
     data: {
       petId: pet.id,
       vetId: vet.id,
@@ -48,6 +48,35 @@ async function main() {
       cost: 328,
       nextVisitDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 90),
       attachments: [],
+    },
+  });
+  const antibiotic = await prisma.medicationSchedule.create({
+    data: {
+      petId: pet.id,
+      recordId: visit.id,
+      drugName: '阿莫西林克拉维酸钾',
+      startDate: new Date(),
+      endDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7),
+      timesPerDay: 2,
+      dosePerKg: 12.5,
+    },
+  });
+  await prisma.medicationSchedule.create({
+    data: {
+      petId: pet.id,
+      recordId: visit.id,
+      drugName: '益生菌',
+      startDate: new Date(),
+      endDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 14),
+      timesPerDay: 1,
+      dosePerKg: 20,
+    },
+  });
+  await prisma.medicationDoseLog.create({
+    data: {
+      scheduleId: antibiotic.id,
+      doseDate: new Date(),
+      doseOrder: 1,
     },
   });
   await prisma.vaccineRecord.create({

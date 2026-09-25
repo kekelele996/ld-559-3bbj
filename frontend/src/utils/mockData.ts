@@ -1,6 +1,7 @@
 import { Gender, InsuranceStatus, PetSpecies, PolicyType, VaccineStatus, VisitType } from '../constants/enums';
 import type { InsurancePolicy } from '../types/insurance';
 import type { MedicalRecord } from '../types/medical';
+import type { MedicationProgress, MedicationSchedule } from '../types/medication';
 import type { Pet } from '../types/pet';
 import type { VaccineRecord } from '../types/vaccine';
 
@@ -113,3 +114,77 @@ export const mockInsurance: InsurancePolicy[] = [
     pet: mockPets[1],
   },
 ];
+
+export const mockMedications: MedicationSchedule[] = [
+  {
+    id: 'medication-demo-1',
+    petId: 'pet-demo-1',
+    recordId: 'medical-demo-1',
+    drugName: '阿莫西林克拉维酸钾',
+    startDate: '2026-09-20',
+    endDate: '2026-09-30',
+    timesPerDay: 2,
+    dosePerKg: 12.5,
+    pet: mockPets[0],
+    doseLogs: [],
+  },
+  {
+    id: 'medication-demo-2',
+    petId: 'pet-demo-1',
+    recordId: 'medical-demo-1',
+    drugName: '益生菌',
+    startDate: '2026-09-20',
+    endDate: '2026-10-04',
+    timesPerDay: 1,
+    dosePerKg: 20,
+    pet: mockPets[0],
+    doseLogs: [],
+  },
+  {
+    id: 'medication-demo-3',
+    petId: 'pet-demo-2',
+    recordId: 'medical-demo-2',
+    drugName: '抗敏喷剂',
+    startDate: '2026-09-23',
+    endDate: '2026-10-07',
+    timesPerDay: 3,
+    dosePerKg: 0.5,
+    pet: mockPets[1],
+    doseLogs: [],
+  },
+];
+
+export function buildMockProgress(petId: string): MedicationProgress {
+  const date = new Date().toISOString().slice(0, 10);
+  const items = mockMedications
+    .filter((item) => item.petId === petId)
+    .filter((item) => item.startDate <= date && date <= item.endDate)
+    .map((item) => {
+      const pet = item.pet || mockPets[0];
+      const dosePerDose = Math.round(pet.weight * item.dosePerKg * 100) / 100;
+      const doses = Array.from({ length: item.timesPerDay }, (_, index) => ({
+        doseOrder: index + 1,
+        confirmed: false,
+        confirmedAt: null,
+      }));
+      return {
+        scheduleId: item.id,
+        recordId: item.recordId,
+        drugName: item.drugName,
+        timesPerDay: item.timesPerDay,
+        dosePerKg: item.dosePerKg,
+        petWeight: pet.weight,
+        dosePerDose,
+        dailyTotal: Math.round(dosePerDose * item.timesPerDay * 100) / 100,
+        doses,
+        confirmedCount: 0,
+        totalCount: item.timesPerDay,
+      };
+    });
+  return {
+    date,
+    items,
+    totalDoses: items.reduce((sum, item) => sum + item.totalCount, 0),
+    confirmedDoses: 0,
+  };
+}

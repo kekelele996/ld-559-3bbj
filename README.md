@@ -17,7 +17,16 @@ cd frontend && npm install && npm run dev
 - 后端 API：http://localhost:38506/api/v1
 - 健康检查：http://localhost:38506/api/v1/health
 
-PetCare+ 是面向宠物主人、兽医和管理员的一站式宠物健康管理平台，覆盖宠物档案、就诊记录、疫苗接种计划、保险保单和提醒通知。
+PetCare+ 是面向宠物主人、兽医和管理员的一站式宠物健康管理平台，覆盖宠物档案、就诊记录、**用药安排与每日喂药打卡**、疫苗接种计划、保险保单和提醒通知。
+
+## 用药安排（处方落地）
+
+兽医在就诊后把一段文字处方转成结构化用药安排：登记药名、疗程起止、每日次数、每公斤每次剂量，系统按宠物体重自动算出**每次剂量**与**每日总量**。
+
+- 同一就诊记录 + 同一药名重复提交时，**保留已有安排**并向前端返回重复提示，不会产生第二条记录。
+- 主人在「宠物详情 → 今日用药」查看当天进度，按次点击确认；同一安排同一天同一次数唯一约束 + upsert，**重复点击不再计次**。
+- 兽医调整疗程（次数/剂量/起止）时，**已确认的打卡记录原样保留**。
+- 疗程起止与就诊日冲突（早于就诊日或结束早于开始）、或宠物体重无效（≤ 0 / 空）时**拒绝保存**，处方原文与历史打卡都不变化。
 
 ## 技术栈
 
@@ -37,8 +46,8 @@ PetCare+ 是面向宠物主人、兽医和管理员的一站式宠物健康管�
 |---|---|
 | `/login` | 演示账号登录 |
 | `/pets` | 宠物卡片、搜索、物种筛选 |
-| `/pets/:id` | 基本信息、就诊时间线、疫苗日历、保单列表 |
-| `/medical` | 就诊记录表格、处方侧栏、费用柱状图 |
+| `/pets/:id` | 基本信息、就诊时间线、**今日用药打卡**、疫苗日历、保单列表 |
+| `/medical` | 就诊记录表格、处方侧栏、**用药安排登记/疗程调整**、费用柱状图 |
 | `/vaccines` | 疫苗日历、待接种提醒、状态标记 |
 | `/insurance` | 保单卡片、理赔流程、保费/保障分析 |
 
@@ -48,6 +57,7 @@ PetCare+ 是面向宠物主人、兽医和管理员的一站式宠物健康管�
 |---|---|---|
 | Pet | `prisma/schema.prisma` → `prisma.service.ts` → `pet.repository.ts` → `pet.service.ts` → `pet.controller.ts` → `pet.routes.ts` | `petApi.ts` → `usePets.ts` → `PetList.tsx` / `PetDetail.tsx` / `PetAvatar.tsx` |
 | MedicalRecord | Prisma → `medical.repository.ts` → `medical.service.ts` → `medical.controller.ts` → `medical.routes.ts` | `medicalApi.ts` → `usePets.ts` → `MedicalManagement.tsx` / `CostBarChart.tsx` |
+| MedicationSchedule + MedicationDoseLog | Prisma → `medication.repository.ts` → `medication.service.ts` → `medication.controller.ts` → `medication.routes.ts` | `medicationApi.ts` → `useMedications.ts` → `MedicationSchedulePanel.tsx` / `MedicationTodayCard.tsx` / `MedicationFormModal.tsx` |
 | VaccineRecord | Prisma → `vaccine.repository.ts` → `vaccine.service.ts` → `vaccine.controller.ts` → `vaccine.routes.ts` | `vaccineApi.ts` → `usePets.ts` → `VaccineManagement.tsx` / `VaccineCalendar.tsx` |
 | InsurancePolicy | Prisma → `insurance.repository.ts` → `insurance.service.ts` → `insurance.controller.ts` → `insurance.routes.ts` | `insuranceApi.ts` → `usePets.ts` → `InsuranceCenter.tsx` / `InsurancePieChart.tsx` |
 
@@ -90,6 +100,7 @@ frontend/
 ├── src/api/
 ├── src/components/common/
 ├── src/components/charts/
+├── src/components/medication/   # 用药安排登记表单 / 今日打卡卡 / 安排列表面板
 ├── src/constants/
 ├── src/hooks/
 ├── src/pages/
@@ -103,6 +114,7 @@ frontend/
 backend/
 ├── src/modules/pets/
 ├── src/modules/medical/
+├── src/modules/medications/      # controller/service/repository/routes/validator/dto
 ├── src/modules/vaccines/
 ├── src/modules/insurance/
 ├── src/modules/auth/
@@ -116,6 +128,31 @@ backend/
 
 database/
 └── seed.ts
+```
+
+## 用药安排 API（`/api/v1/medications`）
+
+| 方法 & 路径 | 说明 |
+|---|---|
+| `GET /medications?petId=` | 查询用药安排（含打卡记录、宠物、就诊） |
+| `GET /medications/progress?petId=&date=` | 查询某日（默认今天）每剂完成情况、每次/每日剂量 |
+| `POST /medications` | 兽医登记用药安排；重复（同就诊+同药名）返回 `data.duplicated=true` 且保留原安排 |
+| `PATCH /medications/:id` | 兽医调整疗程；不删除任何已确认打卡 |
+| `POST /medications/:id/confirm` | 主人按次确认；body `{ doseOrder, doseDate? }`，重复确认幂等不计次 |
+
+```bash
+# 登记用药安排（剂量按宠物体重计算）
+curl -X POST http://localhost:38506/api/v1/medications \
+  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"petId":"<petId>","recordId":"<recordId>","drugName":"阿莫西林克拉维酸钾","startDate":"2026-09-25","endDate":"2026-10-02","timesPerDay":2,"dosePerKg":12.5}'
+
+# 查看今天喂药进度
+curl "http://localhost:38506/api/v1/medications/progress?petId=<petId>" -H "Authorization: Bearer $TOKEN"
+
+# 确认第 1 次喂药（再次调用不会重复计次）
+curl -X POST http://localhost:38506/api/v1/medications/<scheduleId>/confirm \
+  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"doseOrder":1}'
 ```
 
 ## 环境变量

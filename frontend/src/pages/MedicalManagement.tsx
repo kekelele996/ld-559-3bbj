@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { medicalApi } from '../api/medicalApi';
 import { CostBarChart } from '../components/charts/CostBarChart';
 import { PetAvatar } from '../components/common/PetAvatar';
+import { MedicationSchedulePanel } from '../components/medication/MedicationSchedulePanel';
 import { VisitType, enumLabels } from '../constants/enums';
 import { formatCurrency, formatDate } from '../utils/format';
 import type { MedicalRecord } from '../types/medical';
@@ -14,6 +15,7 @@ export default function MedicalManagement() {
   return (
     <Space direction="vertical" size={20} className="page-block">
       <Typography.Title level={2}>就诊管理</Typography.Title>
+      <MedicationSchedulePanel />
       <Card>
         <Table
           rowKey="id"

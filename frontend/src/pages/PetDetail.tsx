@@ -4,6 +4,8 @@ import { usePetDetail, usePetInsurance, usePetMedical, usePetVaccines } from '..
 import { PetAvatar } from '../components/common/PetAvatar';
 import { VaccineCalendar } from '../components/common/VaccineCalendar';
 import { StatusBadge } from '../components/common/StatusBadge';
+import { MedicationTodayCard } from '../components/medication/MedicationTodayCard';
+import { useMedicationProgress } from '../hooks/useMedications';
 import { enumLabels } from '../constants/enums';
 import { formatCurrency, formatDate } from '../utils/format';
 
@@ -13,6 +15,7 @@ export default function PetDetail() {
   const { data: medical = [] } = usePetMedical(id);
   const { data: vaccines = [] } = usePetVaccines(id);
   const { data: policies = [] } = usePetInsurance(id);
+  const { data: progress, isLoading: progressLoading } = useMedicationProgress(id);
   if (!pet) return null;
   return (
     <Space direction="vertical" size={20} className="page-block">
@@ -45,6 +48,11 @@ export default function PetDetail() {
             key: 'medical',
             label: '就诊记录',
             children: <Timeline items={medical.map((record) => ({ children: `${formatDate(record.visitDate)} ${enumLabels[record.type]}：${record.diagnosis}` }))} />,
+          },
+          {
+            key: 'medication',
+            label: '今日用药',
+            children: <MedicationTodayCard progress={progress} loading={progressLoading} />,
           },
           { key: 'vaccines', label: '疫苗日历', children: <VaccineCalendar records={vaccines} /> },
           {
