@@ -54,18 +54,20 @@ enum Gender {
 }
 
 model User {
-  id             String          @id @default(cuid())
-  email          String          @unique
-  password       String
-  name           String
-  role           UserRole
-  pets           Pet[]           @relation("PetOwner")
-  medicalRecords MedicalRecord[] @relation("VetRecords")
-  vaccines       VaccineRecord[] @relation("VaccineVet")
-  notifications  Notification[]
-  auditLogs      AuditLog[]
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
+  id               String            @id @default(cuid())
+  email            String            @unique
+  password         String
+  name             String
+  role             UserRole
+  pets             Pet[]             @relation("PetOwner")
+  medicalRecords   MedicalRecord[]   @relation("VetRecords")
+  vaccines         VaccineRecord[]   @relation("VaccineVet")
+  medicationPlans  MedicationPlan[]  @relation("VetMedicationPlans")
+  medicationLogs   MedicationLog[]   @relation("DoseConfirmer")
+  notifications    Notification[]
+  auditLogs        AuditLog[]
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
 }
 
 model Clinic {
@@ -93,6 +95,7 @@ model Pet {
   medicalRecords MedicalRecord[]
   vaccineRecords VaccineRecord[]
   policies       InsurancePolicy[]
+  medicationPlans MedicationPlan[]
   createdAt      DateTime          @default(now())
   updatedAt      DateTime          @updatedAt
 }
@@ -113,8 +116,44 @@ model MedicalRecord {
   pet           Pet       @relation(fields: [petId], references: [id])
   vet           User      @relation("VetRecords", fields: [vetId], references: [id])
   clinic        Clinic    @relation(fields: [clinicId], references: [id])
+  medicationPlans MedicationPlan[]
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+}
+
+model MedicationPlan {
+  id              String            @id @default(cuid())
+  medicalRecordId String
+  petId           String
+  vetId           String
+  drugName        String
+  startDate       DateTime
+  endDate         DateTime
+  timesPerDay     Int
+  dosePerKg       Float
+  dosePerTime     Float
+  dailyDose       Float
+  medicalRecord   MedicalRecord     @relation(fields: [medicalRecordId], references: [id])
+  pet             Pet               @relation(fields: [petId], references: [id])
+  vet             User              @relation("VetMedicationPlans", fields: [vetId], references: [id])
+  logs            MedicationLog[]
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@unique([medicalRecordId, drugName])
+}
+
+model MedicationLog {
+  id            String          @id @default(cuid())
+  planId        String
+  doseIndex     Int
+  scheduledDate DateTime
+  confirmedById String?
+  confirmedAt   DateTime        @default(now())
+  plan          MedicationPlan  @relation(fields: [planId], references: [id])
+  confirmedBy   User?           @relation("DoseConfirmer", fields: [confirmedById], references: [id])
+
+  @@unique([planId, scheduledDate, doseIndex])
 }
 
 model VaccineRecord {

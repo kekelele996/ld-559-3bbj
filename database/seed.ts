@@ -35,7 +35,7 @@ async function main() {
       medicalHistory: '幼年期肠胃敏感，需定期复查。',
     },
   });
-  await prisma.medicalRecord.create({
+  const visit = await prisma.medicalRecord.create({
     data: {
       petId: pet.id,
       vetId: vet.id,
@@ -48,6 +48,21 @@ async function main() {
       cost: 328,
       nextVisitDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 90),
       attachments: [],
+    },
+  });
+  // 把「益生菌 7 日」处方接成结构化用药安排：每次剂量与每日总量按体重核算。
+  await prisma.medicationPlan.create({
+    data: {
+      medicalRecordId: visit.id,
+      petId: pet.id,
+      vetId: vet.id,
+      drugName: '益生菌',
+      startDate: new Date(),
+      endDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7),
+      timesPerDay: 2,
+      dosePerKg: 0.1,
+      dosePerTime: Math.round(pet.weight * 0.1 * 100) / 100,
+      dailyDose: Math.round(pet.weight * 0.1 * 2 * 100) / 100,
     },
   });
   await prisma.vaccineRecord.create({

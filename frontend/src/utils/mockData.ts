@@ -1,5 +1,6 @@
 import { Gender, InsuranceStatus, PetSpecies, PolicyType, VaccineStatus, VisitType } from '../constants/enums';
 import type { InsurancePolicy } from '../types/insurance';
+import type { MedicationPlan, TodayMedication } from '../types/medication';
 import type { MedicalRecord } from '../types/medical';
 import type { Pet } from '../types/pet';
 import type { VaccineRecord } from '../types/vaccine';
@@ -111,5 +112,36 @@ export const mockInsurance: InsurancePolicy[] = [
     endDate: '2026-07-01',
     status: InsuranceStatus.PENDING_RENEWAL,
     pet: mockPets[1],
+  },
+];
+
+export const mockMedicationPlans: MedicationPlan[] = [
+  {
+    id: 'medication-demo-1',
+    medicalRecordId: 'medical-demo-1',
+    petId: 'pet-demo-1',
+    vetId: 'vet-demo',
+    drugName: '益生菌',
+    startDate: '2026-09-23',
+    endDate: '2026-09-29',
+    timesPerDay: 2,
+    dosePerKg: 0.1,
+    dosePerTime: 1.18,
+    dailyDose: 2.36,
+    pet: mockPets[0],
+    medicalRecord: mockMedical[0],
+  },
+];
+
+export const mockTodayMedications: TodayMedication[] = [
+  {
+    plan: mockMedicationPlans[0],
+    doses: [
+      { doseIndex: 0, confirmed: true },
+      { doseIndex: 1, confirmed: false },
+    ],
+    confirmedCount: 1,
+    totalDoses: 2,
+    completed: false,
   },
 ];

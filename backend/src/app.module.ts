@@ -11,6 +11,9 @@ import { PetRepository } from './modules/pets/pet.repository';
 import { MedicalController } from './modules/medical/medical.controller';
 import { MedicalService } from './modules/medical/medical.service';
 import { MedicalRepository } from './modules/medical/medical.repository';
+import { MedicationController } from './modules/medications/medication.controller';
+import { MedicationService } from './modules/medications/medication.service';
+import { MedicationRepository } from './modules/medications/medication.repository';
 import { VaccineController } from './modules/vaccines/vaccine.controller';
 import { VaccineService } from './modules/vaccines/vaccine.service';
 import { VaccineRepository } from './modules/vaccines/vaccine.repository';
@@ -37,6 +40,7 @@ import { HealthController } from './health.controller';
     AuthController,
     PetsController,
     MedicalController,
+    MedicationController,
     VaccineController,
     InsuranceController,
     NotificationController,
@@ -48,6 +52,8 @@ import { HealthController } from './health.controller';
     PetRepository,
     MedicalService,
     MedicalRepository,
+    MedicationService,
+    MedicationRepository,
     VaccineService,
     VaccineRepository,
     InsuranceService,

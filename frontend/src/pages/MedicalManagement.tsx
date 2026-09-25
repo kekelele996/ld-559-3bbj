@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { medicalApi } from '../api/medicalApi';
 import { CostBarChart } from '../components/charts/CostBarChart';
 import { PetAvatar } from '../components/common/PetAvatar';
+import { MedicalRecordMedication } from '../components/medication/MedicalRecordMedication';
 import { VisitType, enumLabels } from '../constants/enums';
 import { formatCurrency, formatDate } from '../utils/format';
 import type { MedicalRecord } from '../types/medical';
@@ -31,9 +32,10 @@ export default function MedicalManagement() {
       <Card title="费用统计">
         <CostBarChart records={data} />
       </Card>
-      <Drawer title="处方详情" open={Boolean(selected)} onClose={() => setSelected(undefined)} width={420}>
+      <Drawer title="处方详情" open={Boolean(selected)} onClose={() => setSelected(undefined)} width={460}>
         <Typography.Paragraph>{selected?.prescription}</Typography.Paragraph>
         <Typography.Text type="secondary">治疗方案：{selected?.treatment}</Typography.Text>
+        {selected && <MedicalRecordMedication record={selected} />}
       </Drawer>
     </Space>
   );
